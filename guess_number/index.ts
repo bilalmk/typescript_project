@@ -9,7 +9,7 @@ async function welcome()
     const rainbow = animation.rainbow("Can you beat the computer????? \n\n");
 
     await sleep();
-    rainbow.stop();
+    //rainbow.stop();
 
     console.log(`
         ${chalk.blue("Game Rules")}
@@ -20,43 +20,74 @@ async function welcome()
     await sleep();
 }
 
-const input = [
-    {
+async function askAgain()
+{
+    let ans = await inquirer.prompt([{
+        type:"confirm",
+        name:"askAgain",
+        message:"Do you want to play again? Press (Y/N)",
+        default:true
+    }]);
+
+    return ans.askAgain;
+
+}
+
+async function input()
+{
+    let input = await inquirer.prompt([{
         name:"guess",
         type:"number",
         message:"Please provide a number"
-    }
-]
+    }]);
+
+    return input.guess;
+}
 
 let computerNumber = Math.round(Math.random()*10);
 
 let attempt=0;
 
-function main()
+async function main()
 {
-        inquirer.prompt(input).then(answer=>{
+    let completed = false;
+    let answer = await input();
 
-        let diff = answer.guess-computerNumber;
-        attempt++;
-        let attemptLeft = 3-attempt;
-        if(answer.guess==computerNumber)
+    attempt++;
+
+    let diff = answer-computerNumber;
+    let attemptLeft = 3-attempt;
+
+    if(answer==computerNumber)
+    {
+        console.log(chalk.white.bgBlue.bold("Your guess is correct \n\n"));
+        completed = true;
+    }
+    else
+    {
+        if(attempt>=3)
         {
-            console.log("your guess is correct");
-            process.exit(0);
+            console.log(chalk.underline.bgRed.bold("You loss, Correct answer is  "+computerNumber+"\n\n"));
+            completed=true;
         }
         else
         {
-            if(attempt>=3)
-            {
-                console.log("You loss, Correct answer is  "+computerNumber);
-                process.exit(0);
-            }
-
             diff>0? console.log("Incorrect Answer,try a lower number"): console.log("Incorrect Answer, try a big number");
-            console.log(`${attemptLeft} attempt left\n\n`)
+            console.log(`${chalk.yellow.bold(attemptLeft+" attempt left\n\n")}`)
             main();
         }
-    });
+    }
+
+
+    if(completed)
+    {
+        if(await askAgain())
+        {
+            console.log("\n\n")
+            attempt=0;
+            main();
+        }
+    }
 };
 
 console.clear();
