@@ -48,7 +48,7 @@ function main()
         {
             if(attempt>=3)
             {
-                console.log("You loss, Correct answer is "+computerNumber);
+                console.log("You loss, Correct answer is  "+computerNumber);
                 process.exit(0);
             }
 
