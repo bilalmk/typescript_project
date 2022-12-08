@@ -1,10 +1,16 @@
 import inquirer from "inquirer";
+import chalk from "chalk";
 import animation from "chalk-animation";
 let sleep = (ms = 2000) => new Promise(r => setTimeout(r, ms));
 let activityArray = ['Fast Case', 'Balance Inquiry', 'Cash Withdraw'];
 let fastCashArray = ['500', '1000', '2000', '5000', '10,000', '15,000', '20,000'];
 let balance = Math.floor(Math.random() * 100000);
 let credentials = { 'userId': 'bilalmk', 'pin': 1230 };
+let limit = 30000;
+let lineBreak = () => console.log("\n");
+Number.prototype.NumberWithCommas = function () {
+    return this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
 let doAnimation = () => {
     let counter = 0;
     let text = "Please wait transaction is in process.";
@@ -19,21 +25,22 @@ let doAnimation = () => {
         }
     }, 1000);
 };
-async function showInput() {
-    let input = await inquirer.prompt([
+let showCredentials = () => console.log(`Your Atm information is \n\n user id : ${chalk.green.bold(credentials.userId)} \n pin     : ${chalk.green.bold(credentials.pin)} \n start balance : ${chalk.green.bold(balance)} \n\n`);
+let showInput = async () => {
+    await inquirer.prompt([
         {
             name: "userid",
             type: "string",
             message: "Enter your user id : ",
             filter: (value) => value !== credentials.userId ? "" : value,
-            validate: (value) => value !== credentials.userId ? "please provide correct user id" : true,
+            validate: (value) => value !== credentials.userId ? chalk.red("please provide correct user id") : true,
         },
         {
             name: "pin",
             type: "number",
             message: "Enter your pin : ",
             filter: (value) => value.toString() == "" || isNaN(value) || value != credentials.pin ? "" : value,
-            validate: (value) => value != credentials.pin ? "please provide correct pin code" : true
+            validate: (value) => value != credentials.pin ? chalk.red("please provide correct pin code") : true
         },
         {
             name: "accountType",
@@ -42,14 +49,8 @@ async function showInput() {
             message: "Select account type"
         }
     ]);
-}
-function showCredentials() {
-    console.log(`Your Atm information is 
-            user id : ${credentials.userId}
-            pin : ${credentials.pin}
-        `);
-}
-async function actvitiyMenu() {
+};
+let actvitiyMenu = async () => {
     const input = await inquirer.prompt([
         {
             name: "menu",
@@ -59,19 +60,8 @@ async function actvitiyMenu() {
         }
     ]);
     return input.menu;
-}
-async function fastCashMenu() {
-    const input = await inquirer.prompt([
-        {
-            name: "menu",
-            type: "list",
-            choices: fastCashArray,
-            message: "Choose given below"
-        }
-    ]);
-    return input.menu;
-}
-async function inputAmount() {
+};
+let inputAmount = async () => {
     const input = await inquirer.prompt([
         {
             name: "amount",
@@ -82,38 +72,67 @@ async function inputAmount() {
         }
     ]);
     return input.amount;
-}
-async function doFastCash() {
-    let fastCash = await fastCashMenu();
-    await doAnimation();
-    await sleep(6000);
-    balance -= Number(fastCash);
-    console.log(Number(fastCash).NumberWithCommas() + " has withdraw your new balance is " + balance.NumberWithCommas());
-}
-async function doBalanceInquiry() {
-    await doAnimation();
-    await sleep(6000);
-    console.log("Your current balance is " + balance.NumberWithCommas());
-}
-async function doCashWithdraw() {
-    let amount = await inputAmount();
-    await doAnimation();
-    await sleep(6000);
-    balance -= amount;
-    console.log(amount.NumberWithCommas() + " has withdraw your new balance is " + balance.NumberWithCommas());
-}
-async function askAgain() {
+};
+let fastCashMenu = async () => {
+    const input = await inquirer.prompt([
+        {
+            name: "menu",
+            type: "list",
+            choices: fastCashArray,
+            message: "Choose given below"
+        }
+    ]);
+    return input.menu;
+};
+let askAgain = async () => {
+    lineBreak();
     let input = await inquirer.prompt([
         {
             type: "confirm",
             name: "askAgain",
-            message: "Do you want other transaction. Press (Y/N)",
+            message: chalk.red("Do you want another transaction. Press (Y/N)"),
             default: true
         }
     ]);
     return input.askAgain;
-}
-async function operation(value) {
+};
+let doFastCash = async () => {
+    let fastCash = await fastCashMenu();
+    lineBreak();
+    doAnimation();
+    await sleep(6000);
+    lineBreak();
+    fastCash = Number(fastCash.replace(",", ""));
+    if (fastCash > balance)
+        console.log(chalk.bgMagenta("Insufficiant balance, Please enter other amount"));
+    else {
+        balance -= fastCash;
+        console.log(`${chalk.yellow(fastCash.NumberWithCommas())} has withdraw your new balance is ${chalk.yellow(balance.NumberWithCommas())}`);
+    }
+};
+let doBalanceInquiry = async () => {
+    lineBreak();
+    doAnimation();
+    await sleep(6000);
+    lineBreak();
+    console.log(`Your current balance is ${chalk.yellow(balance.NumberWithCommas())}`);
+};
+let doCashWithdraw = async () => {
+    let amount = await inputAmount();
+    lineBreak();
+    doAnimation();
+    await sleep(6000);
+    lineBreak();
+    if (amount > limit)
+        console.log(chalk.bgMagenta("Maximum " + limit + " amount can be withdraw"));
+    else if (amount > balance)
+        console.log(chalk.bgMagenta("Insufficiant balance, Please enter other amount"));
+    else {
+        balance -= amount;
+        console.log(`${chalk.yellow(amount.NumberWithCommas())} has withdraw your new balance is ${balance.NumberWithCommas()}`);
+    }
+};
+let operation = async (value) => {
     switch (value) {
         case activityArray[0]:
             await doFastCash();
@@ -127,17 +146,16 @@ async function operation(value) {
         default:
             break;
     }
-}
-async function main() {
-    console.clear();
+};
+let main = async () => {
     let activity = await actvitiyMenu();
     await operation(activity);
-    if (await askAgain())
+    if (await askAgain()) {
+        lineBreak();
         main();
-}
-Number.prototype.NumberWithCommas = function () {
-    return this.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
 };
+console.clear();
 showCredentials();
 await sleep(1000);
 await showInput();
